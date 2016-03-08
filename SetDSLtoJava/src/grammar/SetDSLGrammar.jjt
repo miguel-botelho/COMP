@@ -3,7 +3,7 @@
  */
 options
 {	
-  DEBUG_PARSER=true;
+  DEBUG_PARSER=false;
   LOOKAHEAD = 2;
 }
 
@@ -31,7 +31,7 @@ public class SetDSLGrammar
 		InputStream stream = new ByteArrayInputStream(ficheiro.getBytes(Charset.forName("UTF-8")));
     
 		System.out.print(ficheiro);
-		SetDSLGrammar myDSL = new SetDSLGrammar(System.in);
+		SetDSLGrammar myDSL = new SetDSLGrammar(stream);
 		SimpleNode n = myDSL.Start();
      	n.dump("");
     }
@@ -89,14 +89,16 @@ SimpleNode Start() :
   
 }
 
+
 void Atributions() #void:
 {
 	Token ch, tam, tipo;
-}{  	tipo = < TYPE > ch = < CHAR > ":" ("Set();"
+}{
+  	LOOKAHEAD(4)  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
     {
         //size.image = "0";
     })
-    | ("Set(" tam = < INTEGER > ");"
+    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");"
     {
        
     })

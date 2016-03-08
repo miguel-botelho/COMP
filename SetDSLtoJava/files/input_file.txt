@@ -1,1 +1,4 @@
 Input A: Set(100);
+Input B: Set();
+Output C:    Set(10000);
+end
