@@ -1,0 +1,105 @@
+/**
+ * JJTree template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{	
+  DEBUG_PARSER=true;
+  LOOKAHEAD = 2;
+}
+
+PARSER_BEGIN(SetDSLGrammar)
+package grammar;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.Charset;
+
+public class SetDSLGrammar
+{
+  public static void main(String args [])
+  {
+	try
+    {
+		String ficheiro;
+	    
+		if ((ficheiro = readFile("files/input_file.txt")) == null)		{			System.out.println("Error reading file.");
+			return;
+		}
+		InputStream stream = new ByteArrayInputStream(ficheiro.getBytes(Charset.forName("UTF-8")));
+    
+		System.out.print(ficheiro);
+		SetDSLGrammar myDSL = new SetDSLGrammar(System.in);
+		SimpleNode n = myDSL.Start();
+     	n.dump("");
+    }
+    catch (Exception e)
+    {
+      System.out.println("Oops.");
+      System.out.println(e.getMessage());
+    }
+  }
+
+  public static String readFile(String fileName) throws IOException {
+    BufferedReader br = new BufferedReader(new FileReader(fileName));
+    try {
+        StringBuilder sb = new StringBuilder();
+        String line = br.readLine();
+
+        while (line != null) {
+            sb.append(line);
+            sb.append("\n");
+            line = br.readLine();
+        }
+        return sb.toString();
+    } finally {
+        br.close();
+    }
+}
+
+}
+
+PARSER_END(SetDSLGrammar)
+
+SKIP :
+{
+  " " | "\r" | "\t"
+}
+
+TOKEN:
+{
+	< INTEGER : ([ "0"-"9" ])+ >
+	| < LF : "\n" >
+	| < TYPE : "Input"|"Output" >
+	| < END : "end" >
+	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >
+}
+
+
+
+SimpleNode Start() :
+{}
+{
+  (Atributions() < LF >)+
+  < END >< LF >  {
+	return jjtThis;
+  } 
+  
+}
+
+void Atributions() #void:
+{
+	Token ch, tam, tipo;
+}{  	tipo = < TYPE > ch = < CHAR > ":" ("Set();"
+    {
+        //size.image = "0";
+    })
+    | ("Set(" tam = < INTEGER > ");"
+    {
+       
+    })
+}
+
+
