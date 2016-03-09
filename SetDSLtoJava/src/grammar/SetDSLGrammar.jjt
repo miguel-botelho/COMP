@@ -82,8 +82,9 @@ TOKEN:
 SimpleNode Start() :
 {}
 {
+  StartOfFile()
   (Atributions() < LF >)+
-  < END >< LF >  {
+  EndOfFile()  {
 	return jjtThis;
   } 
   
@@ -103,5 +104,15 @@ void Atributions() #void:
        
     })
 }
+
+void StartOfFile() #void:{}
+{	"/* @SETDSL" < LF >
+}
+
+void EndOfFile() #void:{}
+{
+	"*/"
+}
+
 
 
