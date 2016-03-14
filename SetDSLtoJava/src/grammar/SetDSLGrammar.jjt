@@ -4,7 +4,7 @@
 options
 {	
   DEBUG_PARSER=false;
-  LOOKAHEAD = 2;
+  LOOKAHEAD = 5;
 }
 
 PARSER_BEGIN(SetDSLGrammar)
@@ -63,18 +63,20 @@ public class SetDSLGrammar
 
 PARSER_END(SetDSLGrammar)
 
-SKIP :
+SKIP:
 {
   " " | "\r" | "\t"
 }
 
 TOKEN:
 {
-	< INTEGER : ([ "0"-"9" ])+ >
+  	< VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
+    | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
 	| < TYPE : "Input"|"Output" >
 	| < END : "end" >
-	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >
+	| < OPERATION : "int"|"union"|"diff"|"sub" >
+	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
 }
 
 
@@ -82,11 +84,14 @@ TOKEN:
 SimpleNode Start() :
 {}
 {
+  (< CHAR > )* 
   StartOfFile()
-  (Atributions() < LF >)+
+  (Atributions() < LF >)*
+  (Operations() < LF >)*
   EndOfFile()  {
 	return jjtThis;
-  } 
+  }
+  (< CHAR >)*
   
 }
 
@@ -94,15 +99,26 @@ SimpleNode Start() :
 void Atributions() #void:
 {
 	Token ch, tam, tipo;
-}{
-  	LOOKAHEAD(4)  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
+}{  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
     {
         //size.image = "0";
     })
+    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");"
+    {
+		//passar values para o SET
+    }) 
     | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");"
     {
-       
+       //criar SET com tam size
     })
+}
+
+void Operations() #void:
+{	Token set, set1, op, set2;
+}
+{	(set = < CHAR > "=" set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
+	{		
+	})
 }
 
 void StartOfFile() #void:{}
@@ -113,6 +129,3 @@ void EndOfFile() #void:{}
 {
 	"*/"
 }
-
-
-

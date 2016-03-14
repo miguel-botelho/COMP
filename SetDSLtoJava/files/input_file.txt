@@ -1,5 +1,8 @@
 /* @SETDSL
+Input D: Set(2,3,4,5,6);
 Input A: Set(100);
 Input B: Set();
 Output C:    Set(10000);
+C = A int B;
+D=A sub C;
 */
