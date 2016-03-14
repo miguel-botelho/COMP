@@ -86,8 +86,9 @@ SimpleNode Start() :
 {
   (< CHAR > )* 
   StartOfFile()
-  (Atributions() < LF >)*
-  (Operations() < LF >)*
+ (   (Atributions() < LF >)*
+ |  (Operations() < LF >)*
+ )+
   EndOfFile()  {
 	return jjtThis;
   }
