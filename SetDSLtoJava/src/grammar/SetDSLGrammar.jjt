@@ -76,19 +76,26 @@ TOKEN:
 	| < TYPE : "Input"|"Output" >
 	| < END : "end" >
 	| < OPERATION : "int"|"union"|"diff"|"sub" >
+	| < IS_EMPTY : "is_empty()" >
+	| < ITERATE : "iterate()" >
+	| < ENUMERATE : "enumerate()" >
+	| < SORT : "sort()" >
+	| < CAPACITY : "capacity()" >
+	| < POP : "pop()" >
+	| < CLEAR : "clear()" >
+	| < SUM : "sum()" >
+	| < MIN : "min()" >
+	| < MAX : "max()" >
 	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
 }
-
-
 
 SimpleNode Start() :
 {}
 {
   (< CHAR > )* 
   StartOfFile()
- (   (Atributions() < LF >)*
- |  (Operations() < LF >)*
- )+
+
+  ((Atributions() < LF >) | (Operations() < LF >) | (Methods() < LF >))*
   EndOfFile()  {
 	return jjtThis;
   }
@@ -120,6 +127,69 @@ void Operations() #void:
 {	(set = < CHAR > "=" set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
 	{		
 	})
+}
+
+void Methods() #void:
+{
+	Token set, method, num, set1;
+}
+{
+	(set = < CHAR > "." method = < IS_EMPTY > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < ITERATE > ";"
+    {
+      
+    })
+    | (set = < CHAR > "." method = < ENUMERATE > ";"
+    {
+
+    })
+    | (set = < CHAR > "." "add(" num = < INTEGER > ");"
+    {
+
+    })
+    | (set = < CHAR > "." "remove(" num = < INTEGER > ");"
+    {
+
+    }) 
+	| (set = < CHAR > "." "equals(" set1 = < CHAR > ");"
+	{
+
+	})
+    | (set = < CHAR > "." "is_element(" num = < INTEGER > ");"
+    {
+
+    })
+    | (set = < CHAR > "." method = < SORT > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < CAPACITY > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < POP > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < CLEAR > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < SUM > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < MAX > ";"
+    {
+
+    })
+    | (set = < CHAR > "." method = < MIN > ";"
+    {
+
+    })
 }
 
 void StartOfFile() #void:{}
