@@ -49,11 +49,13 @@ public class SetDSLGrammar
   }
 
   public static Boolean createAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {
-	Attribute attr = new Attribute(var, size, type, content); 
-    	if (vars.contains(attr))		return false;
-	else	{		vars.add(attr);
-		return true;
-	}
+	Attribute attr = new Attribute(var, size, type, content);
+
+	for (int i = 0; i < vars.size(); i++) {
+	  if (vars.get(i).getVariable().equals(var))
+	  	return false;	}
+	vars.add(attr);
+	return true;
   }
 
   public static String readFile(String fileName) throws IOException {
@@ -87,7 +89,7 @@ TOKEN:
   	< VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
-	| < TYPE : "Input"|"Output" >
+	| < TYPE : "Input"|"Output" > // feito
 	| < END : "end" >
 	| < OPERATION : "int"|"union"|"diff"|"sub" >
 	| < IS_EMPTY : "is_empty()" >
@@ -123,7 +125,18 @@ void Atributions() #void:
 	Token ch, tam, tipo;
 }{  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
     {
-        //size.image = "0"
+        switch (tipo.image) {
+			case "Input":
+			if (!(createAttr(ch.image, 0, true, new ArrayList<Integer>())))
+				return;
+			break;
+			case "Output":
+			if (!(createAttr(ch.image, 0, false, new ArrayList<Integer>())));
+				return;
+			break;
+			default:
+			break;
+		}
     })
     | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");"
     {
