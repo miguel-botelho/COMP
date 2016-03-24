@@ -52,6 +52,14 @@ public class Attribute {
     }
 	
 	public String toString() {
-		return "Content: " + content.toString() + " ,Size: " + size + "\n";
+		return "Var: " + variable + ", Content: " + content.toString() + " ,Size: " + size + "\n";
+	}
+	
+	public ArrayList<Integer> copyContent() {
+		ArrayList<Integer> ret = new ArrayList<Integer>();
+		for (int i = 0; i < this.content.size(); i++) {
+			ret.add(this.content.get(i));
+		}
+		return ret;
 	}
 }

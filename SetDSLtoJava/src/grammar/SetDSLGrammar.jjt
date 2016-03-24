@@ -51,12 +51,143 @@ public class SetDSLGrammar
   public static Boolean createAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {
 	Attribute attr = new Attribute(var, size, type, content);
 
-	for (int i = 0; i < vars.size(); i++) {
-	  if (vars.get(i).getVariable().equals(var))
-	  	return false;	}
+	if (existsVar(var))
+		return false;
+		
 	vars.add(attr);
 	return true;
   }
+
+  public static Boolean checkOperations(String set, String set1, String set2) {
+    if (!(checkType(set, false))) //false é output
+    {
+  		System.out.println("O Set " + set + " não é do tipo Output.");
+  		return false;
+  	}
+  	if (!(checkType(set1, true))) //true é input
+  	{
+		System.out.println("O Set " + set1 + " não é do tipo Input.");
+  		return false;
+  	}
+  	if (!(checkType(set2, true))) //true é input
+  	{
+		System.out.println("O Set " + set2 + " não é do tipo Input.");
+  		return false;
+  	}
+	return true;
+   }
+
+  /* LIST BEGIN */
+  public static ArrayList<Integer> shrinkList(ArrayList<Integer> arr, Integer size) {
+	ArrayList<Integer> ret = new ArrayList<Integer>(size);
+	for (int i = 0; i < size & i < arr.size(); i++) {
+		ret.add(arr.get(i));
+	}
+	return ret;
+  }
+
+  public static void changeContent(String var, ArrayList<Integer> content) {
+	for (int i = 0; i < vars.size(); i++) {
+		  if (vars.get(i).getVariable().equals(var))
+		  	vars.get(i).setContent(content);
+		}
+  }
+
+  public static Boolean existsVar(String var) {
+	for (int i = 0; i < vars.size(); i++) {
+		  if (vars.get(i).getVariable().equals(var))
+		  	return true;
+		}
+	return false;
+  }
+
+  public static Attribute returnAttr(String var) {
+	for (int i = 0; i < vars.size(); i++) {
+		  if (vars.get(i).getVariable().equals(var))
+		  	return vars.get(i);
+		}
+	return null;
+  }
+    
+  public static Boolean checkType(String var, Boolean type) {
+	for (int i = 0; i < vars.size(); i++) {
+		  if (vars.get(i).getVariable().equals(var))
+		  	return vars.get(i).getType() == type;
+		}
+	return false;
+  }
+  /* LIST END */
+  /* OPERATIONS BEGIN */  
+  public static ArrayList<Integer> intersection(String destSet, String set, String set1) {
+	Attribute attr = returnAttr(set);
+	Attribute attr1 = returnAttr(set1);
+
+	ArrayList<Integer> ret = new ArrayList<Integer>();
+	Integer size = 1;
+
+	for (int i = 0; i < attr1.getContent().size(); i++) {
+		if (attr.getContent().contains(attr1.getContent().get(i)))
+			ret.add(attr1.getContent().get(i));
+	}
+	for (int i = 0; i < vars.size(); i++) {
+		if (vars.get(i).getVariable().equals(destSet))
+			size = vars.get(i).getSize();
+	}
+	
+	return shrinkList(ret, size);
+  }
+
+  public static ArrayList<Integer> union(String destSet, String set, String set1) {
+	Attribute attr = returnAttr(set);
+	Attribute attr1 = returnAttr(set1);
+
+	ArrayList<Integer> ret = attr.copyContent();
+	Integer size = 1;
+
+	for (int i = 0; i < attr1.getContent().size(); i++) {
+		if (!(ret.contains(attr1.getContent().get(i))))
+			ret.add(attr1.getContent().get(i));
+	}
+
+	for (int i = 0; i < vars.size(); i++) {		if (vars.get(i).getVariable().equals(destSet))
+			size = vars.get(i).getSize();
+	}
+	return shrinkList(ret, size);
+  }
+
+  public static ArrayList<Integer> difference(String destSet, String set, String set1) {
+	Attribute attr = returnAttr(set);
+	Attribute attr1 = returnAttr(set1);
+
+	ArrayList<Integer> ret = attr.copyContent();
+	Integer size = 1;
+
+	for (int i = 0; i < attr1.getContent().size(); i++) {
+	  	if (ret.contains(attr1.getContent().get(i)))
+			ret.remove(ret.indexOf(attr1.getContent().get(i)));
+	}
+
+	for (int i = 0; i < vars.size(); i++) {
+		if (vars.get(i).getVariable().equals(destSet))
+			size = vars.get(i).getSize();
+	}
+	return shrinkList(ret, size);
+  }
+
+  public static ArrayList<Integer> subset(String destSet, String set, String set1) {
+	Attribute attr = returnAttr(set);
+	Attribute attr1 = returnAttr(set1);
+
+	ArrayList<Integer> ret = attr.copyContent();
+	Integer size = 1;
+
+	for (int i = 0; i < vars.size(); i++) {
+		if (vars.get(i).getVariable().equals(destSet))
+			size = vars.get(i).getSize();
+	}
+	return shrinkList(ret, size);
+  }
+  /* OPERATIONS END */
 
   public static String readFile(String fileName) throws IOException {
     BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -164,11 +295,11 @@ void Atributions() #void:
        switch (tipo.image)
 		{
 			case "Input":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, new ArrayList<Integer>())))
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, new ArrayList<Integer>(Integer.parseInt(tam.image)))))
 				return;
 			break;
 			case "Output":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, new ArrayList<Integer>())));
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, new ArrayList<Integer>(Integer.parseInt(tam.image)))));
 				return;
 			break;
 			default:
@@ -181,7 +312,24 @@ void Operations() #void:
 {	Token set, set1, op, set2;
 }
 {	(set = < CHAR > "=" set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
-	{		
+	{
+	  	if (!(checkOperations(set.image, set1.image, set2.image)))
+	  		return;		switch (op.image) {
+			case "int":
+			changeContent(set.image, intersection(set.image, set1.image, set2.image));
+			break;
+			case "union":
+			changeContent(set.image, union(set.image, set1.image, set2.image));
+			break;
+			case "diff":
+			changeContent(set.image, difference(set.image, set1.image, set2.image));
+			break;
+			case "sub":
+			changeContent(set.image, subset(set.image, set1.image, set2.image));
+			break;
+			default:
+			break; 
+		}		  
 	})
 }
 
