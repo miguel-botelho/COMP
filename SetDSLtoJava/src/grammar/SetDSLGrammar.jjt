@@ -16,9 +16,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
+import java.lang.String;
+import java.util.ArrayList;
 
 public class SetDSLGrammar
 {
+  public static ArrayList<Attribute> vars = new ArrayList<Attribute>();
+  
   public static void main(String args [])
   {
 	try
@@ -29,10 +33,12 @@ public class SetDSLGrammar
 			return;
 		}
 		InputStream stream = new ByteArrayInputStream(ficheiro.getBytes(Charset.forName("UTF-8")));
-    
+
 		System.out.print(ficheiro);
 		SetDSLGrammar myDSL = new SetDSLGrammar(stream);
+		
 		SimpleNode n = myDSL.Start();
+		System.out.println(vars);
      	n.dump("");
     }
     catch (Exception e)
@@ -40,6 +46,14 @@ public class SetDSLGrammar
       System.out.println("Oops.");
       System.out.println(e.getMessage());
     }
+  }
+
+  public static Boolean createAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {
+	Attribute attr = new Attribute(var, size, type, content); 
+    	if (vars.contains(attr))		return false;
+	else	{		vars.add(attr);
+		return true;
+	}
   }
 
   public static String readFile(String fileName) throws IOException {
@@ -57,7 +71,7 @@ public class SetDSLGrammar
     } finally {
         br.close();
     }
-}
+	}
 
 }
 
@@ -109,15 +123,44 @@ void Atributions() #void:
 	Token ch, tam, tipo;
 }{  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
     {
-        //size.image = "0";
+        //size.image = "0"
     })
     | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");"
     {
-		//passar values para o SET
+      	String[] valores = tam.image.split(",");
+      	ArrayList<Integer> vals = new ArrayList<Integer>();
+
+      	for (int i = 0; i < valores.length; i++) {			vals.add(Integer.parseInt(valores[i]));
+      	}
+		switch (tipo.image)
+		{
+			case "Input":
+			if (!(createAttr(ch.image, valores.length, true, vals)))
+				return;
+			break;
+			case "Output":
+			if (!(createAttr(ch.image, valores.length, false, vals)))
+				return;
+			break;
+			default:
+			break;
+		}
     }) 
     | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");"
     {
-       //criar SET com tam size
+       switch (tipo.image)
+		{
+			case "Input":
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, new ArrayList<Integer>())))
+				return;
+			break;
+			case "Output":
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, new ArrayList<Integer>())));
+				return;
+			break;
+			default:
+			break;
+		}
     })
 }
 
