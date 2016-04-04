@@ -324,7 +324,7 @@ void Operations() #void:
 			case "diff":
 			changeContent(set.image, difference(set.image, set1.image, set2.image));
 			break;
-			case "sub":
+			case "sub": //TODO Tirar daqui, é para ser do tipo "A sub B" e retornar booleano
 			changeContent(set.image, subset(set.image, set1.image, set2.image));
 			break;
 			default:

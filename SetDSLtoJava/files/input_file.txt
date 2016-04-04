@@ -1,13 +1,13 @@
 /* @SETDSL
 Input D: Set(2,3,4,5,6);
 Input E: Set(1,2,5,9);
-Input Z: Set();
+Output Z: Set();
 Output A: Set(5);
 Output B: Set(5);
 Output C:    Set(10);
 Output F: Set(7);
 B.min();
-C = D diff E;
+C = D int E;
 D=A sub C;
 Input A: Set();
 Input B: Set(100);
