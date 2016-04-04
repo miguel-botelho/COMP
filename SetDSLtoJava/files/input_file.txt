@@ -7,10 +7,10 @@ Output B: Set(5);
 Output C:    Set(10);
 Output F: Set(7);
 B.min();
-C = D int E;
 D=A sub C;
 Input A: Set();
 Input B: Set(100);
 D = A sub C;
+C = D . E;
 C.sort();
 */

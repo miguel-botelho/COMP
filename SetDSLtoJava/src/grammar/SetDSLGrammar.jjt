@@ -217,12 +217,13 @@ SKIP:
 
 TOKEN:
 {
-  	< VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
+  	< POINT : "." >
+ 	| < EQUALS : "=" >
+	| < OPERATION : "int"|"+"|"diff"|"sub"|"." >
+ 	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
 	| < TYPE : "Input"|"Output" > // feito
-	| < END : "end" >
-	| < OPERATION : "int"|"union"|"diff"|"sub" >
 	| < IS_EMPTY : "is_empty()" >
 	| < ITERATE : "iterate()" >
 	| < ENUMERATE : "enumerate()" >
@@ -242,7 +243,7 @@ SimpleNode Start() :
   (< CHAR > )* 
   StartOfFile()
 
-  ((Atributions() < LF >) | (Operations() < LF >) | (Methods() < LF >))*
+  ((Atributions() < LF >) | (Methods() < LF >) | (Operations() < LF >))*
   EndOfFile()  {
 	return jjtThis;
   }
@@ -309,16 +310,16 @@ void Atributions() #void:
 }
 
 void Operations() #void:
-{	Token set, set1, op, set2;
+{	Token set, set1, op, set2, eq;
 }
-{	(set = < CHAR > "=" set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
+{	(set = < CHAR > eq = < EQUALS > set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
 	{
 	  	if (!(checkOperations(set.image, set1.image, set2.image)))
 	  		return;		switch (op.image) {
 			case "int":
 			changeContent(set.image, intersection(set.image, set1.image, set2.image));
 			break;
-			case "union":
+			case "+":
 			changeContent(set.image, union(set.image, set1.image, set2.image));
 			break;
 			case "diff":
@@ -326,6 +327,9 @@ void Operations() #void:
 			break;
 			case "sub": //TODO Tirar daqui, é para ser do tipo "A sub B" e retornar booleano
 			changeContent(set.image, subset(set.image, set1.image, set2.image));
+			break;
+			case ".": //TODO acrescentar concatenação, que é igual a union mas com repetidos
+			changeContent(set.image, union(set.image, set1.image, set2.image));
 			break;
 			default:
 			break; 
@@ -335,62 +339,62 @@ void Operations() #void:
 
 void Methods() #void:
 {
-	Token set, method, num, set1;
+	Token set, method, num, set1, pt;
 }
 {
-	(set = < CHAR > "." method = < IS_EMPTY > ";"
+	(set = < CHAR > pt = < POINT > method = < IS_EMPTY > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < ITERATE > ";"
+    | (set = < CHAR > pt = < POINT > method = < ITERATE > ";"
     {
       
     })
-    | (set = < CHAR > "." method = < ENUMERATE > ";"
+    | (set = < CHAR > pt = < POINT > method = < ENUMERATE > ";"
     {
 
     })
-    | (set = < CHAR > "." "add(" num = < INTEGER > ");"
+    | (set = < CHAR > pt = < POINT > "add(" num = < INTEGER > ");"
     {
 
     })
-    | (set = < CHAR > "." "remove(" num = < INTEGER > ");"
+    | (set = < CHAR > pt = < POINT > "remove(" num = < INTEGER > ");"
     {
 
     }) 
-	| (set = < CHAR > "." "equals(" set1 = < CHAR > ");"
+	| (set = < CHAR > pt = < POINT > "equals(" set1 = < CHAR > ");"
 	{
 
 	})
-    | (set = < CHAR > "." "is_element(" num = < INTEGER > ");"
+    | (set = < CHAR > pt = < POINT > "is_element(" num = < INTEGER > ");"
     {
 
     })
-    | (set = < CHAR > "." method = < SORT > ";"
+    | (set = < CHAR > pt = < POINT > method = < SORT > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < CAPACITY > ";"
+    | (set = < CHAR > pt = < POINT > method = < CAPACITY > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < POP > ";"
+    | (set = < CHAR > pt = < POINT > method = < POP > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < CLEAR > ";"
+    | (set = < CHAR > pt = < POINT > method = < CLEAR > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < SUM > ";"
+    | (set = < CHAR > pt = < POINT > method = < SUM > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < MAX > ";"
+    | (set = < CHAR > pt = < POINT > method = < MAX > ";"
     {
 
     })
-    | (set = < CHAR > "." method = < MIN > ";"
+    | (set = < CHAR > pt = < POINT > method = < MIN > ";"
     {
 
     })
