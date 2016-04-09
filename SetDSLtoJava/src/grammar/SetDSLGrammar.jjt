@@ -155,6 +155,24 @@ public class SetDSLGrammar
 	return shrinkList(ret, size);
   }
 
+  public static ArrayList<Integer> concat(String destSet, String set, String set1) {
+	Attribute attr = returnAttr(set);
+	Attribute attr1 = returnAttr(set1);
+
+	ArrayList<Integer> ret = attr.copyContent();
+	Integer size = 1;
+
+	for (int i = 0; i < attr1.getContent().size(); i++) {
+		ret.add(attr1.getContent().get(i));
+	}
+
+	for (int i = 0; i < vars.size(); i++) {
+		if (vars.get(i).getVariable().equals(destSet))
+			size = vars.get(i).getSize();
+	}
+	return shrinkList(ret, size);
+  }
+
   public static ArrayList<Integer> difference(String destSet, String set, String set1) {
 	Attribute attr = returnAttr(set);
 	Attribute attr1 = returnAttr(set1);
@@ -219,11 +237,11 @@ TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
-	| < OPERATION : "int"|"+"|"diff"|"sub"|"." >
+	| < OPERATION : "int"|"+"|"diff"|"sub"|"concat" >
  	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
-	| < TYPE : "Input"|"Output" > // feito
+	| < TYPE : "Input"|"Output" >
 	| < IS_EMPTY : "is_empty()" >
 	| < ITERATE : "iterate()" >
 	| < ENUMERATE : "enumerate()" >
@@ -243,7 +261,7 @@ SimpleNode Start() :
   (< CHAR > )* 
   StartOfFile()
 
-  ((Atributions() < LF >) | (Methods() < LF >) | (Operations() < LF >))*
+  ((Atributions() < LF >) | (MethodsNoArguments() < LF >) | (Operations() < LF >) | (MethodsArguments() < LF >))*
   EndOfFile()  {
 	return jjtThis;
   }
@@ -255,7 +273,8 @@ SimpleNode Start() :
 void Atributions() #void:
 {
 	Token ch, tam, tipo;
-}{  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
+}{
+  	// Criar Sets vazios  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
     {
         switch (tipo.image) {
 			case "Input":
@@ -270,7 +289,7 @@ void Atributions() #void:
 			break;
 		}
     })
-    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");"
+    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");" // Criar sets com valores já definidos
     {
       	String[] valores = tam.image.split(",");
       	ArrayList<Integer> vals = new ArrayList<Integer>();
@@ -291,7 +310,7 @@ void Atributions() #void:
 			break;
 		}
     }) 
-    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");"
+    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");" // Criar Sets com tamanho
     {
        switch (tipo.image)
 		{
@@ -328,8 +347,8 @@ void Operations() #void:
 			case "sub": //TODO Tirar daqui, é para ser do tipo "A sub B" e retornar booleano
 			changeContent(set.image, subset(set.image, set1.image, set2.image));
 			break;
-			case ".": //TODO acrescentar concatenação, que é igual a union mas com repetidos
-			changeContent(set.image, union(set.image, set1.image, set2.image));
+			case "concat":
+			changeContent(set.image, concat(set.image, set1.image, set2.image));
 			break;
 			default:
 			break; 
@@ -337,9 +356,9 @@ void Operations() #void:
 	})
 }
 
-void Methods() #void:
+void MethodsNoArguments() #void:
 {
-	Token set, method, num, set1, pt;
+	Token set, method, pt;
 }
 {
 	(set = < CHAR > pt = < POINT > method = < IS_EMPTY > ";"
@@ -351,22 +370,6 @@ void Methods() #void:
       
     })
     | (set = < CHAR > pt = < POINT > method = < ENUMERATE > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > "add(" num = < INTEGER > ");"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > "remove(" num = < INTEGER > ");"
-    {
-
-    }) 
-	| (set = < CHAR > pt = < POINT > "equals(" set1 = < CHAR > ");"
-	{
-
-	})
-    | (set = < CHAR > pt = < POINT > "is_element(" num = < INTEGER > ");"
     {
 
     })
@@ -395,6 +398,29 @@ void Methods() #void:
 
     })
     | (set = < CHAR > pt = < POINT > method = < MIN > ";"
+    {
+
+    })
+}
+
+void MethodsArguments() #void:
+{
+	Token set, num, set1, pt;
+}
+{
+    (set = < CHAR > pt = < POINT > "add(" num = < INTEGER > ");"
+    {
+
+    })
+    | (set = < CHAR > pt = < POINT > "remove(" num = < INTEGER > ");"
+    {
+
+    }) 
+	| (set = < CHAR > pt = < POINT > "equals(" set1 = < CHAR > ");"
+	{
+
+	})
+    | (set = < CHAR > pt = < POINT > "is_element(" num = < INTEGER > ");"
     {
 
     })
