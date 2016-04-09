@@ -1,17 +1,18 @@
 /* @SETDSL
-Input D: Set(2,3,4,5,6);
-Input E: Set(1,2,5,9);
-Output Z: Set();
-Output A: Set(5);
-Output B: Set(5);
-Output C:    Set(10);
-Output F: Set(7);
+Input A: Set(2,3,4,5,6);
+Input B: Set(1,2,5,9);
+Input C: Set();
+Output D: Set(5);
+Output E: Set(5);
+Output F:    Set(10);
+Output G: Set(7);
+Input H: Set(111);
 B.min();
-D=A sub C;
-Input A: Set();
-Input B: Set(100);
-D = A sub C;
-C = D concat E;
+D=A + C;
+Input I: Set();
+Input I: Set(100);
+D = A diff C;
 D.add(10);
 C.sort();
+A sub D;
 */

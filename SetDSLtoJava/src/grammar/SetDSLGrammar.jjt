@@ -18,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.Charset;
 import java.lang.String;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class SetDSLGrammar
 {
@@ -49,10 +50,11 @@ public class SetDSLGrammar
   }
 
   public static Boolean createAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {
-	Attribute attr = new Attribute(var, size, type, content);
-
-	if (existsVar(var))
+	if (existsVar(var))	{		System.out.println("A variável " + var + " já existe.");
 		return false;
+	}
+
+	Attribute attr = new Attribute(var, size, type, content);
 		
 	vars.add(attr);
 	return true;
@@ -237,7 +239,8 @@ TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
-	| < OPERATION : "int"|"+"|"diff"|"sub"|"concat" >
+	| < OPERATION : "int"|"+"|"diff"|"concat" >
+	| < SUBSET : "sub" >
  	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
@@ -279,11 +282,11 @@ void Atributions() #void:
         switch (tipo.image) {
 			case "Input":
 			if (!(createAttr(ch.image, 0, true, new ArrayList<Integer>())))
-				return;
+				System.exit(0);
 			break;
 			case "Output":
 			if (!(createAttr(ch.image, 0, false, new ArrayList<Integer>())));
-				return;
+				System.exit(0);
 			break;
 			default:
 			break;
@@ -300,11 +303,11 @@ void Atributions() #void:
 		{
 			case "Input":
 			if (!(createAttr(ch.image, valores.length, true, vals)))
-				return;
+				System.exit(0);
 			break;
 			case "Output":
 			if (!(createAttr(ch.image, valores.length, false, vals)))
-				return;
+				System.exit(0);
 			break;
 			default:
 			break;
@@ -312,15 +315,16 @@ void Atributions() #void:
     }) 
     | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");" // Criar Sets com tamanho
     {
+       ArrayList<Integer> vals1 = new ArrayList<Integer>(Integer.parseInt(tam.image)); //
        switch (tipo.image)
 		{
 			case "Input":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, new ArrayList<Integer>(Integer.parseInt(tam.image)))))
-				return;
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, vals1)))
+				System.exit(0);
 			break;
 			case "Output":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, new ArrayList<Integer>(Integer.parseInt(tam.image)))));
-				return;
+			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, vals1)));
+				return; //TODO se meter System.exit(0) aqui, não mostra os prints que a função createAttr chama
 			break;
 			default:
 			break;
@@ -334,7 +338,7 @@ void Operations() #void:
 {	(set = < CHAR > eq = < EQUALS > set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
 	{
 	  	if (!(checkOperations(set.image, set1.image, set2.image)))
-	  		return;		switch (op.image) {
+	  		System.exit(0);		switch (op.image) {
 			case "int":
 			changeContent(set.image, intersection(set.image, set1.image, set2.image));
 			break;
@@ -343,9 +347,6 @@ void Operations() #void:
 			break;
 			case "diff":
 			changeContent(set.image, difference(set.image, set1.image, set2.image));
-			break;
-			case "sub": //TODO Tirar daqui, é para ser do tipo "A sub B" e retornar booleano
-			changeContent(set.image, subset(set.image, set1.image, set2.image));
 			break;
 			case "concat":
 			changeContent(set.image, concat(set.image, set1.image, set2.image));
@@ -423,6 +424,9 @@ void MethodsArguments() #void:
     | (set = < CHAR > pt = < POINT > "is_element(" num = < INTEGER > ");"
     {
 
+    })
+    | (set = < CHAR > "sub" set1 = < CHAR > ";"
+    {		
     })
 }
 
