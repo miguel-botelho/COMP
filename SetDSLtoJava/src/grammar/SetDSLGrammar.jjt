@@ -230,12 +230,22 @@ public class SetDSLGrammar
 
 PARSER_END(SetDSLGrammar)
 
-SKIP:
+<DEFAULT> SKIP:
+{  < ~[] >
+}
+
+<DEFAULT> TOKEN:
+{
+  < STARTDSL: "/* @SETDSL" > : SETDSL
+}
+
+
+< SETDSL > SKIP:
 {
   " " | "\r" | "\t"
 }
 
-TOKEN:
+< SETDSL > TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
@@ -255,21 +265,18 @@ TOKEN:
 	| < SUM : "sum()" >
 	| < MIN : "min()" >
 	| < MAX : "max()" >
-	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
+	| < ENDDSL : "*/" > : DEFAULT
+	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >
 }
 
 SimpleNode Start() :
 {}
 {
-  (< CHAR > )* 
-  StartOfFile()
-
-  ((Atributions() < LF >) | (MethodsNoArguments() < LF >) | (Operations() < LF >) | (MethodsArguments() < LF >))*
-  EndOfFile()  {
+  < STARTDSL >
+  ((Atributions() < LF >) | (MethodsNoArguments() < LF >) | (Operations() < LF >) | (MethodsArguments() < LF >))*  {
 	return jjtThis;
   }
-  (< CHAR >)*
-  
+  < ENDDSL > 
 }
 
 
