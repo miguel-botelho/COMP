@@ -4,7 +4,7 @@
 options
 {	
   DEBUG_PARSER=false;
-  LOOKAHEAD = 5;
+  LOOKAHEAD = 2;
 }
 
 PARSER_BEGIN(SetDSLGrammar)
@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class SetDSLGrammar
 {
   public static ArrayList<Attribute> vars = new ArrayList<Attribute>();
+  public static Boolean canRun = true;
   
   public static void main(String args [])
   {
@@ -39,6 +40,8 @@ public class SetDSLGrammar
 		SetDSLGrammar myDSL = new SetDSLGrammar(stream);
 		
 		SimpleNode n = myDSL.Start();
+		if (canRun)
+			runTree(n);
 		System.out.println(vars);
      	n.dump("");
     }
@@ -50,10 +53,6 @@ public class SetDSLGrammar
   }
 
   public static Boolean createAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {
-	if (existsVar(var))	{		System.out.println("A variável " + var + " já existe.");
-		return false;
-	}
-
 	Attribute attr = new Attribute(var, size, type, content);
 		
 	vars.add(attr);
@@ -224,22 +223,54 @@ public class SetDSLGrammar
     } finally {
         br.close();
     }
-	}
+  }
+
+  public static void runTree(SimpleNode n)  {	for (int i = 0; i < n.jjtGetNumChildren(); i++)
+    {
+      SimpleNode temp = (SimpleNode) n.jjtGetChild(i);
+	  runChild(temp);
+    }
+  }
+
+  public static void runChild(SimpleNode n)  {	String var = "";
+	  Integer size = 0;
+	  Boolean type = true;
+	  ArrayList<Integer > vals = new ArrayList<Integer>();
+	  for (int i = 0; i < n.jjtGetNumChildren(); i++)
+	  {
+		SimpleNode novo = (SimpleNode) n.jjtGetChild(i);
+		//tipo
+		if (novo.getVal().equals("Input"))
+			type = true;
+		else if (novo.getVal().equals("Output"))
+			type = false;
+		//size
+		else if (isNumeric(novo.getVal()))
+			size = Integer.parseInt(novo.getVal());
+		else if (novo.getVal() != "")
+			var = novo.getVal();
+		else		{		  vals = novo.getVals();
+		  size = vals.size();
+		}
+	  }
+	  createAttr(var, size, type, vals);
+  }
+  
+  public static boolean isNumeric(String str)  {  
+	  try  
+	  {  
+	    double d = Double.parseDouble(str);  
+	  }  
+	  catch(NumberFormatException nfe)  
+	  {  
+	    return false;  
+	  }  
+	  return true;  
+  }
 
 }
 
 PARSER_END(SetDSLGrammar)
-/*
-< DEFAULT > SKIP: 
-{
-"/* @SETDSL" : SETDSL
-}
-
-< DEFAULT > SKIP: //se quiserem guardar o texto, então usem MORE em vez de SKIP
-{
- < ~[] >
-}
-*/
 
 SKIP:
 {
@@ -250,8 +281,7 @@ TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
-	| < OPERATION : "int"|"+"|"diff"|"concat" >
-	| < SUBSET : "sub" >
+	| < OPERATION : "int"|"+"|"diff"|"sub"|"concat" >
  	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
@@ -266,7 +296,7 @@ TOKEN:
 	| < SUM : "sum()" >
 	| < MIN : "min()" >
 	| < MAX : "max()" >
-	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >
+	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
 }
 
 SimpleNode Start():
@@ -279,9 +309,10 @@ SimpleNode Start():
   */
   StartOfFile()
   //((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
-  ((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
-   {	return jjtThis;
-   }
+  ((Att() < LF >))
+  EndOfFile()
+  {	return jjtThis;
+  }
 }
 //
 void EndOfFile() #void:
@@ -292,27 +323,34 @@ void StartOfFile() #void:
 {}
 {  "/* @SETDSL" < LF >}
 
-void Att_size():
-{	Token t;
+void Att_size() :
+{
+  Token t;
 }
-{	(t = < TYPE >
+{  	t = < TYPE >
 	{
 	  switch(t.image)
 	  {
 	    case "Input":
 		{
 		  String t1 = Token(); //0 Input
-		  System.out.println("type: " + t1);
 		  Integer s = Size();
-		  System.out.println("size: " + s);
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;
 		}
 		case "Output":
 		{
 		  String t1 = Token(); //1 Output
-		  System.out.println("type: " + t1);
 		  Integer s = Size();
-		  System.out.println("size:" + s);
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;
 		}
 		default:
@@ -320,25 +358,34 @@ void Att_size():
 		  break;
 		}	
 	  }
-	} #Tipo
-	)
+	} #Intro	{
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = t.image;	}
 }
-//\
+//
 void Att_empty():
 {	Token t;
 }
-{	(t = < TYPE >
+{	t = < TYPE >
 	{
 	  switch(t.image)	  {	    case "Input":
 		{
 		  String t1 = Token_empty(); //0 Input
-		  System.out.println("type: " + t1);
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;
 		}
 		case "Output":
 		{
 		  String t1 = Token(); //1 Output
-		  System.out.println("type: " + t1);
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;
 		}
 		default:
@@ -346,72 +393,90 @@ void Att_empty():
 		  break;
 		}	
 	  }
-	} #tipo
-	)
+	} #Intro
+	{
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = t.image;
+	}
 }
-
+//
 
 void Att():
 {	Token t;
 }
 {
-  (t = < TYPE >
+  t = < TYPE >
   {	switch(t.image) {		case "Input":		{
 		  String t1 = Token(); //0 Input
 		  ArrayList<Integer> arr = Vals();//
-		  System.out.println("type: " + t1);
-		  System.out.println("vals: " + arr.get(0));
-		  if (!(createAttr(t1, 0, true, new ArrayList<Integer>())))
-		  	return;
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;		}
 		case "Output":		{
 		  String t1 = Token(); //1 Output
 		  ArrayList<Integer> arr = Vals();//
-		  System.out.println("type: " + t1);
-		  System.out.println("vals: " + arr.get(1));
-		  if (!(createAttr(t1, 0, false, new ArrayList<Integer>())))
-		  	return;
+		  if (existsVar(t1))
+		  {
+			System.out.println("A variável " + t1 + " já existe.");
+			canRun = false;
+	 	  }
 		  break;		}
 		default:		{
 		  break;		}	
 	}
-  } #tipo
-  )
+  } #Intro
+  	{
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = t.image;
+	}
 }
 //
-String Token():
+String Token() #Token:
 {	Token ch;
 }
-{	( ch = < CHAR > ":" "Set("
+{	ch = < CHAR > ":" "Set("
+	{		jjtThis.val = ch.image;
+	}
 	{		return ch.image;
-	} #var	)
+	}	
 }
 
-String Token_empty():
+String Token_empty() #Token:
 {
 	Token ch;
 }
 {
-	( ch = < CHAR > ":" "Set();"
+	ch = < CHAR > ":" "Set();"
+	{
+		jjtThis.val = ch.image;
+	}
 	{
 		return ch.image;
-	} #var
-	)
+	}
+	
 }
 
 Integer Size():
 {	Token s;
 }
-{	(s = < INTEGER > ");" 
+{	s = < INTEGER > ");"
+	{  
+		jjtThis.val = s.image;
+	}
 	{
-		return Integer.parseInt(s.image);  	} #size		  	) 
+	 	String set = s.image;
+		return Integer.parseInt(s.image);  	}	   
 }
 
-ArrayList<Integer> Vals():
+
+ArrayList<Integer> Vals() #Values:
 {	Token vals;
 }
 {
-  (vals = < VALUES >
+  vals = < VALUES > ");"
   {
 	  String[] valores = vals.image.split(",");
 	  	ArrayList<Integer> val = new ArrayList<Integer>();
@@ -419,9 +484,10 @@ ArrayList<Integer> Vals():
 	  	for (int i = 0; i < valores.length; i++) {
 			val.add(Integer.parseInt(valores[i]));
 	  	}
+	  	jjtThis.vals = val;
 	  	return val;
-   } #values
-   )
+   }
+   
 }
 
 void Atributions():
