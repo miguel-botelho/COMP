@@ -60,7 +60,7 @@ public class SetDSLGrammar
 	return true;
   }
 
-  public static Boolean checkOperations(String set, String set1, String set2) {
+  public static Boolean checkOperations(String set, String set1, String set2) {
     if (!(checkType(set, false))) //false é output
     {
   		System.out.println("O Set " + set + " não é do tipo Output.");
@@ -118,7 +118,7 @@ public class SetDSLGrammar
 		}
 	return false;
   }
-  /* LIST END */
+  /* LIST END */
   /* OPERATIONS BEGIN */  
   public static ArrayList<Integer> intersection(String destSet, String set, String set1) {
 	Attribute attr = returnAttr(set);
@@ -229,23 +229,24 @@ public class SetDSLGrammar
 }
 
 PARSER_END(SetDSLGrammar)
-
-<DEFAULT> SKIP:
-{  < ~[] >
-}
-
-<DEFAULT> TOKEN:
+/*
+< DEFAULT > SKIP: 
 {
-  < STARTDSL: "/* @SETDSL" > : SETDSL
+"/* @SETDSL" : SETDSL
 }
 
+< DEFAULT > SKIP: //se quiserem guardar o texto, então usem MORE em vez de SKIP
+{
+ < ~[] >
+}
+*/
 
-< SETDSL > SKIP:
+SKIP:
 {
   " " | "\r" | "\t"
 }
 
-< SETDSL > TOKEN:
+TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
@@ -265,22 +266,165 @@ PARSER_END(SetDSLGrammar)
 	| < SUM : "sum()" >
 	| < MIN : "min()" >
 	| < MAX : "max()" >
-	| < ENDDSL : "*/" > : DEFAULT
 	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >
 }
 
-SimpleNode Start() :
+SimpleNode Start():
 {}
 {
-  < STARTDSL >
+  /*
   ((Atributions() < LF >) | (MethodsNoArguments() < LF >) | (Operations() < LF >) | (MethodsArguments() < LF >))*  {
 	return jjtThis;
   }
-  < ENDDSL > 
+  */
+  StartOfFile()
+  //((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
+  ((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
+   {	return jjtThis;
+   }
+}
+//
+void EndOfFile() #void:
+{}
+{	"*/"
+}
+void StartOfFile() #void:
+{}
+{  "/* @SETDSL" < LF >}
+
+void Att_size():
+{	Token t;
+}
+{	(t = < TYPE >
+	{
+	  switch(t.image)
+	  {
+	    case "Input":
+		{
+		  String t1 = Token(); //0 Input
+		  System.out.println("type: " + t1);
+		  Integer s = Size();
+		  System.out.println("size: " + s);
+		  break;
+		}
+		case "Output":
+		{
+		  String t1 = Token(); //1 Output
+		  System.out.println("type: " + t1);
+		  Integer s = Size();
+		  System.out.println("size:" + s);
+		  break;
+		}
+		default:
+		{
+		  break;
+		}	
+	  }
+	} #Tipo
+	)
+}
+//\
+void Att_empty():
+{	Token t;
+}
+{	(t = < TYPE >
+	{
+	  switch(t.image)	  {	    case "Input":
+		{
+		  String t1 = Token_empty(); //0 Input
+		  System.out.println("type: " + t1);
+		  break;
+		}
+		case "Output":
+		{
+		  String t1 = Token(); //1 Output
+		  System.out.println("type: " + t1);
+		  break;
+		}
+		default:
+		{
+		  break;
+		}	
+	  }
+	} #tipo
+	)
 }
 
 
-void Atributions() #void:
+void Att():
+{	Token t;
+}
+{
+  (t = < TYPE >
+  {	switch(t.image) {		case "Input":		{
+		  String t1 = Token(); //0 Input
+		  ArrayList<Integer> arr = Vals();//
+		  System.out.println("type: " + t1);
+		  System.out.println("vals: " + arr.get(0));
+		  if (!(createAttr(t1, 0, true, new ArrayList<Integer>())))
+		  	return;
+		  break;		}
+		case "Output":		{
+		  String t1 = Token(); //1 Output
+		  ArrayList<Integer> arr = Vals();//
+		  System.out.println("type: " + t1);
+		  System.out.println("vals: " + arr.get(1));
+		  if (!(createAttr(t1, 0, false, new ArrayList<Integer>())))
+		  	return;
+		  break;		}
+		default:		{
+		  break;		}	
+	}
+  } #tipo
+  )
+}
+//
+String Token():
+{	Token ch;
+}
+{	( ch = < CHAR > ":" "Set("
+	{		return ch.image;
+	} #var	)
+}
+
+String Token_empty():
+{
+	Token ch;
+}
+{
+	( ch = < CHAR > ":" "Set();"
+	{
+		return ch.image;
+	} #var
+	)
+}
+
+Integer Size():
+{	Token s;
+}
+{	(s = < INTEGER > ");" 
+	{
+		return Integer.parseInt(s.image);  	} #size		  	) 
+}
+
+ArrayList<Integer> Vals():
+{	Token vals;
+}
+{
+  (vals = < VALUES >
+  {
+	  String[] valores = vals.image.split(",");
+	  	ArrayList<Integer> val = new ArrayList<Integer>();
+	
+	  	for (int i = 0; i < valores.length; i++) {
+			val.add(Integer.parseInt(valores[i]));
+	  	}
+	  	return val;
+   } #values
+   )
+}
+
+void Atributions():
 {
 	Token ch, tam, tipo;
 }{
@@ -339,7 +483,7 @@ void Atributions() #void:
     })
 }
 
-void Operations() #void:
+void Operations():
 {	Token set, set1, op, set2, eq;
 }
 {	(set = < CHAR > eq = < EQUALS > set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
@@ -364,7 +508,7 @@ void Operations() #void:
 	})
 }
 
-void MethodsNoArguments() #void:
+void MethodsNoArguments():
 {
 	Token set, method, pt;
 }
@@ -411,7 +555,7 @@ void MethodsNoArguments() #void:
     })
 }
 
-void MethodsArguments() #void:
+void MethodsArguments():
 {
 	Token set, num, set1, pt;
 }
@@ -435,13 +579,4 @@ void MethodsArguments() #void:
     | (set = < CHAR > "sub" set1 = < CHAR > ";"
     {		
     })
-}
-
-void StartOfFile() #void:{}
-{	"/* @SETDSL" < LF >
-}
-
-void EndOfFile() #void:{}
-{
-	"*/"
 }
