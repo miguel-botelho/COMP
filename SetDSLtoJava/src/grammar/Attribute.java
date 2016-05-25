@@ -62,4 +62,30 @@ public class Attribute {
 		}
 		return ret;
 	}
+	
+	public Integer minimum() {
+		if (this.content != null) {
+			Integer inte = this.content.get(0);
+			for (int i = 0; i < this.content.size(); i++)
+			{
+				if (this.getContent().get(i) < inte)
+					inte = this.getContent().get(i);
+			}
+			return inte;
+		}
+		else return -1;
+	}
+	
+	public Integer maximum() {
+		if (this.content != null) {
+			Integer inte = this.content.get(0);
+			for (int i = 0; i < this.content.size(); i++)
+			{
+				if (this.getContent().get(i) > inte)
+					inte = this.getContent().get(i);
+			}
+			return inte;
+		}
+		else return -1;
+	}
 }

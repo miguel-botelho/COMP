@@ -36,7 +36,6 @@ public class SetDSLGrammar
 		}
 		InputStream stream = new ByteArrayInputStream(ficheiro.getBytes(Charset.forName("UTF-8")));
 
-		System.out.print(ficheiro);
 		SetDSLGrammar myDSL = new SetDSLGrammar(stream);
 		
 		SimpleNode n = myDSL.Start();
@@ -57,6 +56,13 @@ public class SetDSLGrammar
 		
 	vars.add(attr);
 	return true;
+  }
+
+  public static void changeAttr(String var, int size, Boolean type, ArrayList<Integer> content)  {	for (int i = 0; i < vars.size(); i++)	{		if (vars.get(i).getVariable().equals(var))		{			vars.get(i).setSize(size);
+			vars.get(i).setType(type);
+			vars.get(i).setContent(content);
+		}
+	}
   }
 
   public static Boolean checkOperations(String set, String set1, String set2) {
@@ -208,6 +214,27 @@ public class SetDSLGrammar
   }
   /* OPERATIONS END */
 
+  /* METHODS BEGIN */
+	public static Integer minimum(String var) {
+		Integer in = -1;
+		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				in = vars.get(i).minimum();
+		}
+		return in;
+	}
+
+	public static Integer maximum(String var) {
+		Integer in = -1;
+		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				in = vars.get(i).maximum();
+		}
+		return in;
+	}
+
+  /* METHODS END */
+
   public static String readFile(String fileName) throws IOException {
     BufferedReader br = new BufferedReader(new FileReader(fileName));
     try {
@@ -228,11 +255,67 @@ public class SetDSLGrammar
   public static void runTree(SimpleNode n)  {	for (int i = 0; i < n.jjtGetNumChildren(); i++)
     {
       SimpleNode temp = (SimpleNode) n.jjtGetChild(i);
-	  runChild(temp);
+
+      switch (temp.getVal())
+      {
+      	case "Attribution":
+      		runAtt(temp);
+      		break;
+      	case "MethodArguments":
+      		runMetArgs(temp);
+      		break;
+      	case "MethodNoArguments":
+      		runMet(temp);
+      		break;
+      	case "Operation":
+      		runOp(temp);
+      		break;
+      	default:
+      		break;      }
+      if (temp.getVal().equals("Attribution"))
+	  	runAtt(temp);
+	  
     }
   }
 
-  public static void runChild(SimpleNode n)  {	String var = "";
+  public static void runMet(SimpleNode n)  {
+    for (int i = 0; i < n.jjtGetNumChildren(); i++)	{
+		SimpleNode no = (SimpleNode) n.jjtGetChild(i);
+		switch (no.getFunc())
+		{
+			case "is_empty()":
+				break;
+			case "iterate()":
+				break;
+			case "enumerate()":
+				break;
+			case "sort()":
+				break;
+			case "capacity()":
+				break;
+			case "pop()":
+				break;
+			case "clear()":
+				break;
+			case "sum()":
+				break;
+			case "min()":
+				System.out.println("The minimum of " + no.getVal() + " is " + minimum(no.getVal()));
+				break;
+			case "max()":
+				System.out.println("The minimum of " + no.getVal() + " is " + maximum(no.getVal()));
+				break;
+			default:
+				break;		}	}
+  }
+
+  public static void runMetArgs(SimpleNode n)  {
+  }
+
+  public static void runOp(SimpleNode n)  {
+  }
+
+  public static void runAtt(SimpleNode n)  {	String var = "";
 	  Integer size = 0;
 	  Boolean type = true;
 	  ArrayList<Integer > vals = new ArrayList<Integer>();
@@ -253,7 +336,7 @@ public class SetDSLGrammar
 		  size = vals.size();
 		}
 	  }
-	  createAttr(var, size, type, vals);
+	  changeAttr(var, size, type, vals);
   }
   
   public static boolean isNumeric(String str)  {  
@@ -310,6 +393,7 @@ SimpleNode Start():
   StartOfFile()
   //((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
   ((Att() < LF >))
+  ((MethodsNoArgs() < LF >))
   EndOfFile()
   {	return jjtThis;
   }
@@ -322,6 +406,105 @@ void EndOfFile() #void:
 void StartOfFile() #void:
 {}
 {  "/* @SETDSL" < LF >}
+void MethodsArgs():
+{	Token set;
+}
+{	set = < CHAR > "."
+	{		
+	}
+	{
+	  jjtThis.val = "MethodArguments";
+	}
+}
+
+void MethodsNoArgs() #MethodNoArguments:
+{
+	Token set;
+}
+{
+	set = < CHAR > "."
+	{
+		String t = set.image;
+		String s = Func();
+		if (!existsVar(t))
+		{
+			System.err.println("A variável " + t + " não existe.");
+			canRun = false;
+			return;
+		}
+	} 
+	{
+	  jjtThis.val = "MethodNoArguments";
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = set.image;
+	}
+}
+
+String Func():
+{	Token method;
+}
+{
+	(method = < IS_EMPTY > ";"
+	{
+		jjtThis.func = method.image;
+	}	{		return method.image;
+	})
+	| (method = < ITERATE > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < ENUMERATE > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < SORT > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < CAPACITY > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < POP > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < CLEAR > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < SUM > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < MAX > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+	| (method = < MIN > ";"
+	{
+		jjtThis.func = method.image;
+	}
+	{		return method.image;
+	})
+}
+
 
 void Att_size() :
 {
@@ -337,9 +520,12 @@ void Att_size() :
 		  Integer s = Size();
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
 		  break;
 		}
 		case "Output":
@@ -348,9 +534,12 @@ void Att_size() :
 		  Integer s = Size();
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
 		  break;
 		}
 		default:
@@ -359,6 +548,7 @@ void Att_size() :
 		}	
 	  }
 	} #Intro	{
+	  jjtThis.val = "Attribution";
 	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
 	  no.val = t.image;	}
 }
@@ -373,19 +563,25 @@ void Att_empty():
 		  String t1 = Token_empty(); //0 Input
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
-		  break;
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
+		  break;	  
 		}
 		case "Output":
 		{
 		  String t1 = Token(); //1 Output
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
 		  break;
 		}
 		default:
@@ -395,6 +591,7 @@ void Att_empty():
 	  }
 	} #Intro
 	{
+	  jjtThis.val = "Attribution";
 	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
 	  no.val = t.image;
 	}
@@ -411,24 +608,31 @@ void Att():
 		  ArrayList<Integer> arr = Vals();//
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
 		  break;		}
 		case "Output":		{
 		  String t1 = Token(); //1 Output
 		  ArrayList<Integer> arr = Vals();//
 		  if (existsVar(t1))
 		  {
-			System.out.println("A variável " + t1 + " já existe.");
+			System.err.println("A variável " + t1 + " já existe.");
 			canRun = false;
+			return;
 	 	  }
+	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+		  vars.add(attr);
 		  break;		}
 		default:		{
 		  break;		}	
 	}
   } #Intro
   	{
+  	  jjtThis.val = "Attribution";
 	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
 	  no.val = t.image;
 	}

@@ -1,3 +1,4 @@
 /* @SETDSL
 Input C: Set(2,3,4,5,6);
+C.min();
 */
