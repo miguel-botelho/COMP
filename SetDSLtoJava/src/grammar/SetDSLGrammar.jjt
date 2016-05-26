@@ -4,7 +4,7 @@
 options
 {	
   DEBUG_PARSER=false;
-  LOOKAHEAD = 2;
+  LOOKAHEAD = 10;
 }
 
 PARSER_BEGIN(SetDSLGrammar)
@@ -19,6 +19,7 @@ import java.nio.charset.Charset;
 import java.lang.String;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 
 public class SetDSLGrammar
 {
@@ -68,17 +69,17 @@ public class SetDSLGrammar
   public static Boolean checkOperations(String set, String set1, String set2) {
     if (!(checkType(set, false))) //false é output
     {
-  		System.out.println("O Set " + set + " não é do tipo Output.");
+  		System.err.println("O Set " + set + " não é do tipo Output.");
   		return false;
   	}
   	if (!(checkType(set1, true))) //true é input
   	{
-		System.out.println("O Set " + set1 + " não é do tipo Input.");
+		System.err.println("O Set " + set1 + " não é do tipo Input.");
   		return false;
   	}
   	if (!(checkType(set2, true))) //true é input
   	{
-		System.out.println("O Set " + set2 + " não é do tipo Input.");
+		System.err.println("O Set " + set2 + " não é do tipo Input.");
   		return false;
   	}
 	return true;
@@ -93,11 +94,13 @@ public class SetDSLGrammar
 	return ret;
   }
 
-  public static void changeContent(String var, ArrayList<Integer> content) {
+  public static ArrayList<Integer> changeContent(String var, ArrayList<Integer> content) {
 	for (int i = 0; i < vars.size(); i++) {
-		  if (vars.get(i).getVariable().equals(var))
-		  	vars.get(i).setContent(content);
+		if (vars.get(i).getVariable().equals(var))		{			vars.get(i).setContent(content);
+			return vars.get(i).getContent();
 		}
+	}
+	return null;	
   }
 
   public static Boolean existsVar(String var) {
@@ -233,7 +236,130 @@ public class SetDSLGrammar
 		return in;
 	}
 
+	public static Boolean is_empty(String var)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				if (vars.get(i).getSize() > 0)
+					return false;
+		}
+		return true;
+	}
+
+	public static ArrayList<Integer> enumerate(String var)	{
+		ArrayList<Integer> arr = null;		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				arr = vars.get(i).getContent();
+		}
+		return arr;
+	}
+
+	public static ArrayList<Integer> sort(String var)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{				Collections.sort(vars.get(i).getContent());
+				return vars.get(i).getContent();
+			}
+		}
+		return null;
+	}
+
+	public static Integer sum(String var)	{
+	  	Integer contador = 0;		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{				for (int j = 0; j < vars.get(i).getContent().size(); j++)				{					contador = contador + vars.get(i).getContent().get(j);
+				}
+			}
+		}
+		return contador;
+	}
+
+	public static Integer capacity(String var)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				return vars.get(i).getSize();
+		}
+		return -1;
+	}
+
+	public static void pop(String var)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				System.err.println("TODO POP");
+		}
+	}
+
+	public static void clear(String var)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+				vars.get(i).setContent(new ArrayList<Integer>());
+		}
+	}
+
   /* METHODS END */
+
+  /* METHODS ARGUMENTS BEGIN */
+	public static ArrayList<Integer> add(String var, Integer num)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))			{
+				if (vars.get(i).getSize() > vars.get(i).getContent().size())				{					vars.get(i).getContent().add(num);
+					return vars.get(i).getContent();
+				}
+			}
+		}
+		return null;
+	}
+
+	public static ArrayList<Integer> remove(String var, Integer num)	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{				if (vars.get(i).getContent() != null)
+				{					for (int j = 0; j < vars.get(i).getContent().size(); j++)					{						if (vars.get(i).getContent().get(j) == num)						{							vars.get(i).getContent().remove(j);
+							return vars.get(i).getContent();
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	public static Integer equals(String var, String var1)	{
+	  	ArrayList<Integer> te = null;
+	  	Boolean b = true;
+	  	Integer siz = -1;
+	  	ArrayList<Integer> te1 = new ArrayList<Integer>(2);
+	  	Integer siz1 = -2;		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{
+				te = vars.get(i).getContent();
+				siz = vars.get(i).getSize();
+			}
+		}
+
+		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{
+			  	b = false;
+				te1 = vars.get(i).getContent();
+				siz1 = vars.get(i).getSize();
+			}
+		}
+
+		if ((siz == siz1) || (te.size() == te1.size()))
+		{			for (int i = 0; i < te.size(); i++)			{				if (te.get(i) != te1.get(i))					return 1;
+			}
+		}
+		else if (b)
+			return -1;
+		return 0;
+	}
+
+	public static Boolean is_element(String var, Integer num)
+	{		for (int i = 0; i < vars.size(); i++) {
+			if (vars.get(i).getVariable().equals(var))
+			{
+				for (int j = 0; j  < vars.get(i).getContent().size(); j++)				{					if (vars.get(i).getContent().get(j) == num)
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+
+  /* METHODS ARGUMENTS END */
 
   public static String readFile(String fileName) throws IOException {
     BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -271,10 +397,7 @@ public class SetDSLGrammar
       		runOp(temp);
       		break;
       	default:
-      		break;      }
-      if (temp.getVal().equals("Attribution"))
-	  	runAtt(temp);
-	  
+      		break;     } 
     }
   }
 
@@ -284,20 +407,29 @@ public class SetDSLGrammar
 		switch (no.getFunc())
 		{
 			case "is_empty()":
+				if (is_empty(no.getVal()))
+					System.out.println("Set " + no.getVal() + " is empty");
+				else System.out.println("Set " + no.getVal() + " is not empty");
 				break;
 			case "iterate()":
+				//
 				break;
 			case "enumerate()":
+				System.out.println("Set enumerated: " + enumerate(no.getVal()));
 				break;
 			case "sort()":
+				System.out.println("The Set " + no.getVal() + " has been sorted. The new content is: " + sort(no.getVal()));
 				break;
 			case "capacity()":
+				System.out.println("The capacity of " + no.getVal() + " is " + capacity(no.getVal()));
 				break;
 			case "pop()":
 				break;
 			case "clear()":
+				System.out.println(no.getVal() + " has been cleared");
 				break;
 			case "sum()":
+				System.out.println("The sum of " + no.getVal() + " is " + sum(no.getVal()));
 				break;
 			case "min()":
 				System.out.println("The minimum of " + no.getVal() + " is " + minimum(no.getVal()));
@@ -309,10 +441,100 @@ public class SetDSLGrammar
 				break;		}	}
   }
 
-  public static void runMetArgs(SimpleNode n)  {
+  public static void runMetArgs(SimpleNode n)  {	Integer num = 0;
+	String function = "";
+	for (int i = 0; i < n.jjtGetNumChildren(); i++)
+	{
+		SimpleNode novo = (SimpleNode) n.jjtGetChild(i);
+		//tipo
+		
+		if (isNumeric(novo.getVal()))
+			num = Integer.parseInt(novo.getVal());
+		else if (novo.getFunc() != "")
+			function = novo.getFunc();		
+  	}
+
+	ArrayList<Integer> temp;
+  	switch (function)
+	{
+		case "add(":
+			temp = add(n.getFunc(), num);
+			if (temp != null)
+				System.out.println("Set enumerated: " + temp);
+			else System.err.println("The set " + n.getFunc() + " doesn't have enough size.");
+			break;
+		case "remove(":
+			temp = remove(n.getFunc(), num);
+			if (temp != null)
+				System.out.println("Set enumerated: " + temp);
+			else System.err.println("The set " + n.getFunc() + " doesn't have the element " + num);
+			break;
+		case "equals(":
+			Integer na = equals(n.getFunc(), ((SimpleNode)n.jjtGetChild(1)).getVal());
+			if (na == 0)
+				System.out.println("The sets " + n.getFunc() + " and " + ((SimpleNode)n.jjtGetChild(1)).getVal() + " are equal");
+			else if (na == 1)
+				System.out.println("The sets " + n.getFunc() + " and " + ((SimpleNode)n.jjtGetChild(1)).getVal() + " are not equal");
+			else System.err.println("The set " + ((SimpleNode)n.jjtGetChild(1)).getVal() + " doesn't exist");
+			break;
+		case "is_element(":
+			if (is_element(n.getFunc(), num))
+				System.out.println("The set " + n.getFunc() + " contains the element " + num);
+			else System.out.println("The set " + n.getFunc() + " doesn't contain the element " + num);
+			break;
+		default:
+			break;
+	}
+  	
   }
 
   public static void runOp(SimpleNode n)  {
+    String set1 = "";
+    String set2 = "";
+    String set3 = "";
+    String op = "op";
+    
+    SimpleNode novo = (SimpleNode) n.jjtGetChild(0);
+    set1 = novo.getVal();
+
+    novo = (SimpleNode) n.jjtGetChild(1);
+    set2 = novo.getVal();
+
+    novo = (SimpleNode) n.jjtGetChild(2);
+    op = novo.getVal();
+
+    novo = (SimpleNode) n.jjtGetChild(3);
+    set3 = novo.getVal();
+
+	ArrayList<Integer> no;
+    switch (op)    {		case "+":
+			no = changeContent(set1, union(set1, set2, set3));
+			if (no != null)
+				System.out.println(op + " executed. The set " + set1 + " is: " + no);
+			else System.err.println("Error executing " + op);
+			break;
+		case "int":
+			no = changeContent(set1, intersection(set1, set2, set3));
+			if (no != null)
+				System.out.println(op + " executed. The set " + set1 + " is: " + no);
+			else System.err.println("Error executing " + op);
+			break;
+		case "diff":
+			no = changeContent(set1, difference(set1, set2, set3));
+			if (no != null)
+				System.out.println(op + " executed. The set " + set1 + " is: " + no);
+			else System.err.println("Error executing " + op);
+			break;
+		case "concat":
+			no = changeContent(set1, concat(set1, set2, set3));
+			if (no != null)
+				System.out.println(op + " executed. The set " + set1 + " is: " + no);
+			else System.err.println("Error executing " + op);
+			break;
+		default:
+			break;
+    }
+    
   }
 
   public static void runAtt(SimpleNode n)  {	String var = "";
@@ -323,6 +545,7 @@ public class SetDSLGrammar
 	  {
 		SimpleNode novo = (SimpleNode) n.jjtGetChild(i);
 		//tipo
+		
 		if (novo.getVal().equals("Input"))
 			type = true;
 		else if (novo.getVal().equals("Output"))
@@ -336,7 +559,8 @@ public class SetDSLGrammar
 		  size = vals.size();
 		}
 	  }
-	  changeAttr(var, size, type, vals);
+	  if (!var.equals(""))
+	  	changeAttr(var, size, type, vals);
   }
   
   public static boolean isNumeric(String str)  {  
@@ -364,7 +588,7 @@ TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
-	| < OPERATION : "int"|"+"|"diff"|"sub"|"concat" >
+	| < OPERATION : "int"|"+"|"diff"|"concat" >
  	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
 	| < LF : "\n" >
@@ -379,6 +603,11 @@ TOKEN:
 	| < SUM : "sum()" >
 	| < MIN : "min()" >
 	| < MAX : "max()" >
+	| < ADD : "add(" >
+	| < REMOVE : "remove(" >
+	| < EQUAL : "equals(" >
+	| < IS_ELEMENT : "is_element(" >
+	| < SUB : "sub(" >
 	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
 }
 
@@ -393,7 +622,9 @@ SimpleNode Start():
   StartOfFile()
   //((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
   ((Att() < LF >))
-  ((MethodsNoArgs() < LF >))
+  ((Att() < LF >))
+  ((Att_size() < LF >))
+  ((Opers() < LF >))
   EndOfFile()
   {	return jjtThis;
   }
@@ -406,23 +637,122 @@ void EndOfFile() #void:
 void StartOfFile() #void:
 {}
 {  "/* @SETDSL" < LF >}
-void MethodsArgs():
+
+void Opers() #Operations:
 {	Token set;
 }
-{	set = < CHAR > "."
-	{		
+{	set = < CHAR >
+	{
+		if (!existsVar(set.image))
+		{
+			System.err.println("A variável " + set.image + " não existe.");
+			canRun = false;
+			return;
+		}
+	  
+	  	String set2;
+	  	set2 = Oper2(set.image);		if (!existsVar(set2))
+		{
+			System.err.println("A variável " + set2 + " não existe.");
+			canRun = false;
+			return;
+		}
+
+		String op;
+		op = Op();
+
+		String set3;
+		set3 = Oper3();
+		if (!existsVar(set3))
+		{			System.err.println("A variável " + set3 + " não existe.");
+			canRun = false;
+			return;
+		}
+		if (!(checkOperations(set.image, set2, set3)))
+		{
+			canRun = false;
+			return;
+		}
+	} #Set1
+	{
+		jjtThis.val = "Operation";
+		SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  	no.val = set.image;
+	}
+}
+
+String Op() #Operation:
+{
+	Token o;
+}
+{
+	o = < OPERATION >
+	{		jjtThis.val = o.image;
+	}
+	{
+	  	return o.image;	
+	}
+}
+
+String Oper2(String s) #Set2:
+{	Token set2, eq;
+}
+{	eq = < EQUALS > set2 = < CHAR >
+	{		jjtThis.val = set2.image;
+	}
+	{
+	  	if (!existsVar(set2.image))
+		{
+			System.err.println("A variável " + set2.image + " não existe.");
+			canRun = false;
+			return null;
+		}		return set2.image;
+	}
+}
+
+String Oper3() #Set3:
+{
+	Token set3;
+}
+{
+	set3 = < CHAR > ";"
+	{		jjtThis.val = set3.image;
+	}
+	{
+	  	if (!existsVar(set3.image))
+		{
+			System.err.println("A variável " + set3.image + " não existe.");
+			canRun = false;
+			return null;
+		}
+		return set3.image;
+	}
+}
+void MethodsArgs() #MethodArguments:
+{	Token set, pt;
+}
+{	set = < CHAR > pt = < POINT >
+	{		String t = set.image;
+		String s = FuncArgs();
+		if (!existsVar(t))
+		{			System.err.println("A variável " + t + " não existe.");
+			canRun = false;
+			return;
+		}
 	}
 	{
 	  jjtThis.val = "MethodArguments";
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  jjtThis.func = set.image;
 	}
 }
 
 void MethodsNoArgs() #MethodNoArguments:
 {
-	Token set;
+	Token set, pt;
 }
 {
-	set = < CHAR > "."
+	set = < CHAR > pt = < POINT >
 	{
 		String t = set.image;
 		String s = Func();
@@ -440,7 +770,7 @@ void MethodsNoArgs() #MethodNoArguments:
 	}
 }
 
-String Func():
+String Func() #Function:
 {	Token method;
 }
 {
@@ -505,8 +835,65 @@ String Func():
 	})
 }
 
+String FuncArgs() #Function:
+{
+	Token method;
+}
+{
+	(method = < ADD >
+	{
+		jjtThis.func = method.image;
+	}
+	{
+	  	Number();
+		return method.image;
+	})
+	| (method = < REMOVE >
+	{
+		jjtThis.func = method.image;
+	}
+	{
+	  	Number();
+		return method.image;
+	})
+	| (method = < EQUAL >
+	{
+		jjtThis.func = method.image;
+	}
+	{
+	  	Char();
+		return method.image;
+	})
+	| (method = < IS_ELEMENT >
+	{	
+		jjtThis.func = method.image;
+	}
+	{
+	  	Number();
+		return method.image;
+	})
+}
 
-void Att_size() :
+Integer Number() #Number:
+{	Token n;
+}
+{	n = < INTEGER > ");"
+	{		jjtThis.val = n.image;
+		return Integer.parseInt(n.image);
+	}
+}
+
+String Char() #Set:
+{	Token c;
+}
+{	c = < CHAR > ");"
+	{		jjtThis.val = c.image;
+		return c.image;
+	}
+}
+
+
+void Att_size() #Attribution:
 {
   Token t;
 }
@@ -538,7 +925,7 @@ void Att_size() :
 			canRun = false;
 			return;
 	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+	 	  Attribute attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
 		  vars.add(attr);
 		  break;
 		}
@@ -553,7 +940,7 @@ void Att_size() :
 	  no.val = t.image;	}
 }
 //
-void Att_empty():
+void Att_empty() #Attribution:
 {	Token t;
 }
 {	t = < TYPE >
@@ -580,7 +967,7 @@ void Att_empty():
 			canRun = false;
 			return;
 	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+	 	  Attribute attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
 		  vars.add(attr);
 		  break;
 		}
@@ -598,35 +985,38 @@ void Att_empty():
 }
 //
 
-void Att():
+void Att() #Attribution:
 {	Token t;
 }
 {
   t = < TYPE >
-  {	switch(t.image) {		case "Input":		{
-		  String t1 = Token(); //0 Input
-		  ArrayList<Integer> arr = Vals();//
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;		}
-		case "Output":		{
-		  String t1 = Token(); //1 Output
-		  ArrayList<Integer> arr = Vals();//
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;		}
+  {
+    String t1;
+    ArrayList<Integer> arr;
+    Attribute attr;	switch(t.image) {		case "Input":
+			t1 = Token();
+			arr = Vals();
+			if (existsVar(t1))
+			{
+				System.err.println("A variável " + t1 + " já existe.");
+				canRun = false;
+				return;
+		 	}
+		 	attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
+			vars.add(attr);
+			break;
+		case "Output":
+			t1 = Token();
+			arr = Vals();
+			if (existsVar(t1))
+			{
+				System.err.println("A variável " + t1 + " já existe.");
+				canRun = false;
+				return;
+		 	}
+		 	attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
+			vars.add(attr);
+			break;
 		default:		{
 		  break;		}	
 	}
@@ -663,7 +1053,7 @@ String Token_empty() #Token:
 	
 }
 
-Integer Size():
+Integer Size() #Size:
 {	Token s;
 }
 {	s = < INTEGER > ");"
@@ -692,161 +1082,4 @@ ArrayList<Integer> Vals() #Values:
 	  	return val;
    }
    
-}
-
-void Atributions():
-{
-	Token ch, tam, tipo;
-}{
-  	// Criar Sets vazios  	(tipo = < TYPE > ch = < CHAR > ":" "Set();"
-    {
-        switch (tipo.image) {
-			case "Input":
-			if (!(createAttr(ch.image, 0, true, new ArrayList<Integer>())))
-				System.exit(0);
-			break;
-			case "Output":
-			if (!(createAttr(ch.image, 0, false, new ArrayList<Integer>())));
-				System.exit(0);
-			break;
-			default:
-			break;
-		}
-    })
-    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < VALUES > ");" // Criar sets com valores já definidos
-    {
-      	String[] valores = tam.image.split(",");
-      	ArrayList<Integer> vals = new ArrayList<Integer>();
-
-      	for (int i = 0; i < valores.length; i++) {			vals.add(Integer.parseInt(valores[i]));
-      	}
-		switch (tipo.image)
-		{
-			case "Input":
-			if (!(createAttr(ch.image, valores.length, true, vals)))
-				System.exit(0);
-			break;
-			case "Output":
-			if (!(createAttr(ch.image, valores.length, false, vals)))
-				System.exit(0);
-			break;
-			default:
-			break;
-		}
-    }) 
-    | (tipo = < TYPE > ch = < CHAR > ":" "Set(" tam = < INTEGER > ");" // Criar Sets com tamanho
-    {
-       ArrayList<Integer> vals1 = new ArrayList<Integer>(Integer.parseInt(tam.image)); //
-       switch (tipo.image)
-		{
-			case "Input":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), true, vals1)))
-				System.exit(0);
-			break;
-			case "Output":
-			if (!(createAttr(ch.image, Integer.parseInt(tam.image), false, vals1)));
-				return; //TODO se meter System.exit(0) aqui, não mostra os prints que a função createAttr chama
-			break;
-			default:
-			break;
-		}
-    })
-}
-
-void Operations():
-{	Token set, set1, op, set2, eq;
-}
-{	(set = < CHAR > eq = < EQUALS > set1 = < CHAR > op = < OPERATION > set2 = < CHAR > ";"
-	{
-	  	if (!(checkOperations(set.image, set1.image, set2.image)))
-	  		System.exit(0);		switch (op.image) {
-			case "int":
-			changeContent(set.image, intersection(set.image, set1.image, set2.image));
-			break;
-			case "+":
-			changeContent(set.image, union(set.image, set1.image, set2.image));
-			break;
-			case "diff":
-			changeContent(set.image, difference(set.image, set1.image, set2.image));
-			break;
-			case "concat":
-			changeContent(set.image, concat(set.image, set1.image, set2.image));
-			break;
-			default:
-			break; 
-		}		  
-	})
-}
-
-void MethodsNoArguments():
-{
-	Token set, method, pt;
-}
-{
-	(set = < CHAR > pt = < POINT > method = < IS_EMPTY > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < ITERATE > ";"
-    {
-      
-    })
-    | (set = < CHAR > pt = < POINT > method = < ENUMERATE > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < SORT > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < CAPACITY > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < POP > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < CLEAR > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < SUM > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < MAX > ";"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > method = < MIN > ";"
-    {
-
-    })
-}
-
-void MethodsArguments():
-{
-	Token set, num, set1, pt;
-}
-{
-    (set = < CHAR > pt = < POINT > "add(" num = < INTEGER > ");"
-    {
-
-    })
-    | (set = < CHAR > pt = < POINT > "remove(" num = < INTEGER > ");"
-    {
-
-    }) 
-	| (set = < CHAR > pt = < POINT > "equals(" set1 = < CHAR > ");"
-	{
-
-	})
-    | (set = < CHAR > pt = < POINT > "is_element(" num = < INTEGER > ");"
-    {
-
-    })
-    | (set = < CHAR > "sub" set1 = < CHAR > ";"
-    {		
-    })
 }
