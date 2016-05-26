@@ -4,7 +4,8 @@
 options
 {	
   DEBUG_PARSER=false;
-  LOOKAHEAD = 10;
+  static = true;
+  LOOKAHEAD = 500;
 }
 
 PARSER_BEGIN(SetDSLGrammar)
@@ -579,15 +580,30 @@ public class SetDSLGrammar
 
 PARSER_END(SetDSLGrammar)
 
-SKIP:
+< DEFAULT > SKIP: 
+{
+"/* @SETDSL\n" : DSL
+}
+
+< DEFAULT > SKIP: //se quiserem guardar o texto, então usem MORE em vez de SKIP
+{
+ < ~[] >
+}
+
+< DSL > SKIP:
+{ 	"*/": DEFAULT
+}
+
+< DSL > SKIP:
 {
   " " | "\r" | "\t"
 }
 
-TOKEN:
+< DSL > TOKEN:
 {
   	< POINT : "." >
  	| < EQUALS : "=" >
+ 	| < TWO : ":" >
 	| < OPERATION : "int"|"+"|"diff"|"concat" >
  	| < VALUES : ([ "0"-"9" ])+","([ "0"-"9" ])+(","([ "0"-"9" ])+)* >
     | < INTEGER : ([ "0"-"9" ])+ >
@@ -608,35 +624,35 @@ TOKEN:
 	| < EQUAL : "equals(" >
 	| < IS_ELEMENT : "is_element(" >
 	| < SUB : "sub(" >
-	| < CHAR : [ "A"-"Z", "a"-"z" ]([ "0"-"9", "a"-"z", "A"-"Z" ])* >	
+	| < CHAR : [ "A"-"Z", "a"-"z" ] >
+	| < SET_OPEN : "Set(" >
+	| < SET : "Set();" >
+	| < COMMA : ";" >
+	| < CLOSE : ");" >
 }
 
 SimpleNode Start():
 {}
 {
-  /*
-  ((Atributions() < LF >) | (MethodsNoArguments() < LF >) | (Operations() < LF >) | (MethodsArguments() < LF >))*  {
-	return jjtThis;
-  }
-  */
-  StartOfFile()
-  //((Att_size() < LF >) | (Att_empty() < LF >) | (Att() < LF >))*
-  ((Att() < LF >))
-  ((Att() < LF >))
-  ((Att_size() < LF >))
-  ((Opers() < LF >))
-  EndOfFile()
-  {	return jjtThis;
-  }
+	(Att() < LF >)
+	(Att() < LF >)
+	(Att_size() < LF >)
+	(Opers() < LF >)
+	{		return jjtThis;
+	}
 }
-//
+
+
 void EndOfFile() #void:
 {}
-{	"*/"
+{	"*/" < EOF >
 }
+
+/*
 void StartOfFile() #void:
 {}
 {  "/* @SETDSL" < LF >}
+*/
 
 void Opers() #Operations:
 {	Token set;
@@ -715,7 +731,7 @@ String Oper3() #Set3:
 	Token set3;
 }
 {
-	set3 = < CHAR > ";"
+	set3 = < CHAR > < COMMA >
 	{		jjtThis.val = set3.image;
 	}
 	{
@@ -774,60 +790,60 @@ String Func() #Function:
 {	Token method;
 }
 {
-	(method = < IS_EMPTY > ";"
+	(method = < IS_EMPTY > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}	{		return method.image;
 	})
-	| (method = < ITERATE > ";"
+	| (method = < ITERATE > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < ENUMERATE > ";"
+	| (method = < ENUMERATE > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < SORT > ";"
+	| (method = < SORT > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < CAPACITY > ";"
+	| (method = < CAPACITY > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < POP > ";"
+	| (method = < POP > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < CLEAR > ";"
+	| (method = < CLEAR > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < SUM > ";"
+	| (method = < SUM > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < MAX > ";"
+	| (method = < MAX > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
 	{		return method.image;
 	})
-	| (method = < MIN > ";"
+	| (method = < MIN > < COMMA >
 	{
 		jjtThis.func = method.image;
 	}
@@ -877,7 +893,7 @@ String FuncArgs() #Function:
 Integer Number() #Number:
 {	Token n;
 }
-{	n = < INTEGER > ");"
+{	n = < INTEGER > < CLOSE >
 	{		jjtThis.val = n.image;
 		return Integer.parseInt(n.image);
 	}
@@ -886,7 +902,7 @@ Integer Number() #Number:
 String Char() #Set:
 {	Token c;
 }
-{	c = < CHAR > ");"
+{	c = < CHAR > < CLOSE >
 	{		jjtThis.val = c.image;
 		return c.image;
 	}
@@ -1031,7 +1047,7 @@ void Att() #Attribution:
 String Token() #Token:
 {	Token ch;
 }
-{	ch = < CHAR > ":" "Set("
+{	ch = < CHAR > < TWO > < SET_OPEN >
 	{		jjtThis.val = ch.image;
 	}
 	{		return ch.image;
@@ -1043,7 +1059,7 @@ String Token_empty() #Token:
 	Token ch;
 }
 {
-	ch = < CHAR > ":" "Set();"
+	ch = < CHAR > < TWO > < SET >
 	{
 		jjtThis.val = ch.image;
 	}
@@ -1056,7 +1072,7 @@ String Token_empty() #Token:
 Integer Size() #Size:
 {	Token s;
 }
-{	s = < INTEGER > ");"
+{	s = < INTEGER > < CLOSE >
 	{  
 		jjtThis.val = s.image;
 	}
@@ -1070,7 +1086,7 @@ ArrayList<Integer> Vals() #Values:
 {	Token vals;
 }
 {
-  vals = < VALUES > ");"
+  vals = < VALUES > < CLOSE >
   {
 	  String[] valores = vals.image.split(",");
 	  	ArrayList<Integer> val = new ArrayList<Integer>();
