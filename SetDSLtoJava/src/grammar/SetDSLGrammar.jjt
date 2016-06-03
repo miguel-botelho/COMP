@@ -3,9 +3,10 @@
  */
 options
 {	
-  DEBUG_PARSER=false;
-  static = true;
-  LOOKAHEAD = 500;
+  //DEBUG_PARSER=true;
+  //DEBUG_LOOKAHEAD=true;
+  //DEBUG_TOKEN_MANAGER=true;
+  LOOKAHEAD = 5;
 }
 
 PARSER_BEGIN(SetDSLGrammar)
@@ -580,18 +581,18 @@ public class SetDSLGrammar
 
 PARSER_END(SetDSLGrammar)
 
-< DEFAULT > SKIP: 
-{
-"/* @SETDSL\n" : DSL
-}
-
 < DEFAULT > SKIP: //se quiserem guardar o texto, então usem MORE em vez de SKIP
 {
  < ~[] >
 }
 
-< DSL > SKIP:
-{ 	"*/": DEFAULT
+< DEFAULT > SKIP: 
+{
+"/* @SETDSL\n" : DSL
+}
+
+< DSL > TOKEN:
+{ 	< ENDFILE :"*/" > : DEFAULT
 }
 
 < DSL > SKIP:
@@ -631,65 +632,29 @@ PARSER_END(SetDSLGrammar)
 	| < CLOSE : ");" >
 }
 
-SimpleNode Start():
+SimpleNode Start() :
 {}
-{
-	(Att() < LF >)
-	(Att() < LF >)
-	(Att_size() < LF >)
-	(Opers() < LF >)
+{	
+	((Att() < LF >) |
+	(Att_size() < LF >) |
+	(Att_empty() < LF >) |
+	(Opers() < LF >) |
+	(MethodsArgs() < LF >) |
+	(MethodsNoArgs() < LF >) )*
 	{		return jjtThis;
 	}
 }
 
-
-void EndOfFile() #void:
-{}
-{	"*/" < EOF >
-}
-
-/*
-void StartOfFile() #void:
-{}
-{  "/* @SETDSL" < LF >}
-*/
-
+/* OPERATIONS */
 void Opers() #Operations:
 {	Token set;
 }
-{	set = < CHAR >
+{	set = < CHAR > #Set1
 	{
-		if (!existsVar(set.image))
-		{
-			System.err.println("A variável " + set.image + " não existe.");
-			canRun = false;
-			return;
-		}
-	  
-	  	String set2;
-	  	set2 = Oper2(set.image);		if (!existsVar(set2))
-		{
-			System.err.println("A variável " + set2 + " não existe.");
-			canRun = false;
-			return;
-		}
-
-		String op;
-		op = Op();
-
-		String set3;
-		set3 = Oper3();
-		if (!existsVar(set3))
-		{			System.err.println("A variável " + set3 + " não existe.");
-			canRun = false;
-			return;
-		}
-		if (!(checkOperations(set.image, set2, set3)))
-		{
-			canRun = false;
-			return;
-		}
-	} #Set1
+	}
+	Oper2()
+	Op()
+	Oper3()
 	{
 		jjtThis.val = "Operation";
 		SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
@@ -697,7 +662,7 @@ void Opers() #Operations:
 	}
 }
 
-String Op() #Operation:
+SimpleNode Op() #Operation:
 {
 	Token o;
 }
@@ -706,56 +671,62 @@ String Op() #Operation:
 	{		jjtThis.val = o.image;
 	}
 	{
-	  	return o.image;	
+	  	return jjtThis;	
 	}
 }
 
-String Oper2(String s) #Set2:
+SimpleNode Oper2() #Set2:
 {	Token set2, eq;
+	String t;
 }
 {	eq = < EQUALS > set2 = < CHAR >
 	{		jjtThis.val = set2.image;
 	}
 	{
-	  	if (!existsVar(set2.image))
+	  	t = set2.image;
+	  	if (!existsVar(t))
 		{
-			System.err.println("A variável " + set2.image + " não existe.");
+			System.err.println("A variável " + t + " não existe.");
 			canRun = false;
-			return null;
-		}		return set2.image;
+			return jjtThis;
+		}		return jjtThis;
 	}
 }
 
-String Oper3() #Set3:
+SimpleNode Oper3() #Set3:
 {
 	Token set3;
+	String t;
 }
 {
 	set3 = < CHAR > < COMMA >
 	{		jjtThis.val = set3.image;
 	}
 	{
-	  	if (!existsVar(set3.image))
+	  	t = set3.image;
+	  	if (!existsVar(t))
 		{
-			System.err.println("A variável " + set3.image + " não existe.");
+			System.err.println("A variável " + t + " não existe.");
 			canRun = false;
-			return null;
+			return jjtThis;
 		}
-		return set3.image;
+		return jjtThis;
 	}
 }
+/* ALL METHODS WITH ARGUMENTS */
 void MethodsArgs() #MethodArguments:
 {	Token set, pt;
+	String t;
 }
 {	set = < CHAR > pt = < POINT >
-	{		String t = set.image;
-		String s = FuncArgs();
+	{		t = set.image;
 		if (!existsVar(t))
 		{			System.err.println("A variável " + t + " não existe.");
 			canRun = false;
 			return;
 		}
 	}
+	FuncArgs()
 	{
 	  jjtThis.val = "MethodArguments";
 	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
@@ -763,95 +734,7 @@ void MethodsArgs() #MethodArguments:
 	}
 }
 
-void MethodsNoArgs() #MethodNoArguments:
-{
-	Token set, pt;
-}
-{
-	set = < CHAR > pt = < POINT >
-	{
-		String t = set.image;
-		String s = Func();
-		if (!existsVar(t))
-		{
-			System.err.println("A variável " + t + " não existe.");
-			canRun = false;
-			return;
-		}
-	} 
-	{
-	  jjtThis.val = "MethodNoArguments";
-	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
-	  no.val = set.image;
-	}
-}
-
-String Func() #Function:
-{	Token method;
-}
-{
-	(method = < IS_EMPTY > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}	{		return method.image;
-	})
-	| (method = < ITERATE > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < ENUMERATE > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < SORT > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < CAPACITY > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < POP > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < CLEAR > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < SUM > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < MAX > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-	| (method = < MIN > < COMMA >
-	{
-		jjtThis.func = method.image;
-	}
-	{		return method.image;
-	})
-}
-
-String FuncArgs() #Function:
+SimpleNode FuncArgs() #Function:
 {
 	Token method;
 }
@@ -861,229 +744,193 @@ String FuncArgs() #Function:
 		jjtThis.func = method.image;
 	}
 	{
-	  	Number();
-		return method.image;
+		return jjtThis;
 	})
 	| (method = < REMOVE >
 	{
 		jjtThis.func = method.image;
 	}
 	{
-	  	Number();
-		return method.image;
+		return jjtThis;
 	})
 	| (method = < EQUAL >
 	{
 		jjtThis.func = method.image;
 	}
 	{
-	  	Char();
-		return method.image;
+		return jjtThis;
 	})
 	| (method = < IS_ELEMENT >
 	{	
 		jjtThis.func = method.image;
 	}
 	{
-	  	Number();
-		return method.image;
+		return jjtThis;
+	})
+	Number()
+	Char()
+}
+
+SimpleNode Number() #Number:
+{
+	Token n;
+}
+{
+	n = < INTEGER > < CLOSE >
+	{
+		jjtThis.val = n.image;
+		return jjtThis;
+	}
+}
+
+SimpleNode Char() #Set:
+{
+	Token c;
+}
+{
+	c = < CHAR > < CLOSE >
+	{
+		jjtThis.val = c.image;
+		return jjtThis;
+	}
+}
+
+/* ALL METHODS WITH NO ARGUMENTS */
+void MethodsNoArgs() #MethodNoArguments:
+{
+	Token set, pt;
+	String t;
+}
+{
+	set = < CHAR > pt = < POINT >
+	{
+		t = set.image;
+		if (!existsVar(t))
+		{
+			System.err.println("A variável " + t + " não existe.");
+			canRun = false;
+			return;
+		}
+	}
+	Func()
+	{
+	  jjtThis.val = "MethodNoArguments";
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = set.image;
+	}
+}
+
+SimpleNode Func() #Function:
+{	Token method;
+}
+{
+	(method = < IS_EMPTY > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}	{		return jjtThis;
+	})
+	| (method = < ITERATE > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < ENUMERATE > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < SORT > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < CAPACITY > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < POP > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < CLEAR > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < SUM > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < MAX > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
+	})
+	| (method = < MIN > < COMMA >
+	{
+		jjtThis.func = method.image;
+	}
+	{		return jjtThis;
 	})
 }
 
-Integer Number() #Number:
-{	Token n;
-}
-{	n = < INTEGER > < CLOSE >
-	{		jjtThis.val = n.image;
-		return Integer.parseInt(n.image);
-	}
-}
-
-String Char() #Set:
-{	Token c;
-}
-{	c = < CHAR > < CLOSE >
-	{		jjtThis.val = c.image;
-		return c.image;
-	}
-}
-
-
-void Att_size() #Attribution:
-{
-  Token t;
-}
-{  	t = < TYPE >
-	{
-	  switch(t.image)
-	  {
-	    case "Input":
-		{
-		  String t1 = Token(); //0 Input
-		  Integer s = Size();
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;
-		}
-		case "Output":
-		{
-		  String t1 = Token(); //1 Output
-		  Integer s = Size();
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;
-		}
-		default:
-		{
-		  break;
-		}	
-	  }
-	} #Intro	{
-	  jjtThis.val = "Attribution";
-	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
-	  no.val = t.image;	}
-}
-//
-void Att_empty() #Attribution:
-{	Token t;
-}
-{	t = < TYPE >
-	{
-	  switch(t.image)	  {	    case "Input":
-		{
-		  String t1 = Token_empty(); //0 Input
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;	  
-		}
-		case "Output":
-		{
-		  String t1 = Token(); //1 Output
-		  if (existsVar(t1))
-		  {
-			System.err.println("A variável " + t1 + " já existe.");
-			canRun = false;
-			return;
-	 	  }
-	 	  Attribute attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
-		  vars.add(attr);
-		  break;
-		}
-		default:
-		{
-		  break;
-		}	
-	  }
-	} #Intro
-	{
-	  jjtThis.val = "Attribution";
-	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
-	  no.val = t.image;
-	}
-}
-//
-
+/* Attributions with values */
 void Att() #Attribution:
 {	Token t;
+	String inputType;
 }
 {
-  t = < TYPE >
+  t = < TYPE > #Intro
   {
-    String t1;
-    ArrayList<Integer> arr;
-    Attribute attr;	switch(t.image) {		case "Input":
-			t1 = Token();
-			arr = Vals();
-			if (existsVar(t1))
-			{
-				System.err.println("A variável " + t1 + " já existe.");
-				canRun = false;
-				return;
-		 	}
-		 	attr = new Attribute(t1, 0, true, new ArrayList<Integer>());
-			vars.add(attr);
-			break;
-		case "Output":
-			t1 = Token();
-			arr = Vals();
-			if (existsVar(t1))
-			{
-				System.err.println("A variável " + t1 + " já existe.");
-				canRun = false;
-				return;
-		 	}
-		 	attr = new Attribute(t1, 0, false, new ArrayList<Integer>());
-			vars.add(attr);
-			break;
-		default:		{
-		  break;		}	
-	}
-  } #Intro
+    inputType = t.image;	
+  }
+  Token(inputType)
+  Vals()
   	{
   	  jjtThis.val = "Attribution";
 	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
 	  no.val = t.image;
 	}
 }
-//
-String Token() #Token:
+
+SimpleNode Token(String inputType) #Token:
 {	Token ch;
 }
 {	ch = < CHAR > < TWO > < SET_OPEN >
-	{		jjtThis.val = ch.image;
+	{
+    	Attribute attr;		jjtThis.val = ch.image;
+		if (existsVar(ch.image))
+			{
+				System.err.println("A variável " + ch.image + " já existe.");
+				canRun = false;
+				return jjtThis;
+		 	}
+		 	if (inputType.equals("Input"))		 	{
+			 	attr = new Attribute(ch.image, 0, true, new ArrayList<Integer>());
+				vars.add(attr);
+			}
+			else			{
+				attr = new Attribute(ch.image, 0, false, new ArrayList<Integer>());
+				vars.add(attr);			}
 	}
-	{		return ch.image;
-	}	
+	{		return jjtThis;
+	}
 }
 
-String Token_empty() #Token:
+SimpleNode Vals() #Values:
 {
-	Token ch;
-}
-{
-	ch = < CHAR > < TWO > < SET >
-	{
-		jjtThis.val = ch.image;
-	}
-	{
-		return ch.image;
-	}
-	
-}
-
-Integer Size() #Size:
-{	Token s;
-}
-{	s = < INTEGER > < CLOSE >
-	{  
-		jjtThis.val = s.image;
-	}
-	{
-	 	String set = s.image;
-		return Integer.parseInt(s.image);  	}	   
-}
-
-
-ArrayList<Integer> Vals() #Values:
-{	Token vals;
+	Token vals;
 }
 {
   vals = < VALUES > < CLOSE >
@@ -1095,7 +942,87 @@ ArrayList<Integer> Vals() #Values:
 			val.add(Integer.parseInt(valores[i]));
 	  	}
 	  	jjtThis.vals = val;
-	  	return val;
+	  	return jjtThis;
    }
-   
+}
+
+/* Empty Attributions, no size and no values */
+void Att_empty() #Attribution:
+{
+	Token t;
+	String inputType;
+}
+{
+	t = < TYPE > #Intro
+	{
+	  inputType = t.image;
+	}
+	Token_empty(inputType)
+	{
+	  jjtThis.val = "Attribution";
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = t.image;
+	}
+}
+
+SimpleNode Token_empty(String inputType) #Token:
+{
+	Token ch;
+}
+{
+	ch = < CHAR > < TWO > < SET >
+	{
+		jjtThis.val = ch.image;
+		Attribute attr;
+		if (existsVar(ch.image))
+			{
+				System.err.println("A variável " + ch.image + " já existe.");
+				canRun = false;
+				return jjtThis;
+		 	}
+		 	if (inputType.equals("Input"))
+		 	{
+			 	attr = new Attribute(ch.image, 0, true, new ArrayList<Integer>());
+				vars.add(attr);
+			}
+			else
+			{
+				attr = new Attribute(ch.image, 0, false, new ArrayList<Integer>());
+				vars.add(attr);
+			}
+	}
+	{
+		return jjtThis;
+	}
+	
+}
+/* Attributions with only size */
+void Att_size() #Attribution:
+{
+  Token t;
+  String inputType;
+}
+{  
+	t = < TYPE > #Intro
+	{
+	  inputType = t.image;
+	}
+	Token(inputType)
+	Size()
+	{
+	  jjtThis.val = "Attribution";
+	  SimpleNode no = (SimpleNode) jjtThis.jjtGetChild(0);
+	  no.val = t.image;
+	}
+}
+
+SimpleNode Size() #Size:
+{	Token s;
+}
+{	s = < INTEGER > < CLOSE >
+	{  
+		jjtThis.val = s.image;
+	}
+	{
+	 	return jjtThis;	}	   
 }
